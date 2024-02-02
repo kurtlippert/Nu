@@ -15,6 +15,17 @@ type [<Struct>] Blend =
     | Additive
     | Overwrite
 
+/// Represents an aspect of font styling.
+[<Syntax
+    ("Bold Italic Underline Strikethrough", "", "", "", "",
+     Constants.PrettyPrinter.DefaultThresholdMin,
+     Constants.PrettyPrinter.DefaultThresholdMax)>]
+type [<Struct>] FontStyle =
+    | Bold
+    | Italic
+    | Underline
+    | Strikethrough
+
 /// Horizontal justification.
 [<Syntax
     ("JustifyLeft JustifyRight JustifyCenter", "", "", "", "",
@@ -92,10 +103,7 @@ type [<CustomEquality; NoComparison>] RenderPass =
 type RenderAsset =
     | RawAsset
     | TextureAsset of TextureMetadata : OpenGL.Texture.TextureMetadata * Texture : OpenGL.Texture.Texture
-    | FontAsset of PointSize : int * Font : nativeint
+    | FontAsset of FontSizeDefault : int * Font : nativeint
     | CubeMapAsset of FilePaths : OpenGL.CubeMap.CubeMapMemoKey * CubeMap : OpenGL.Texture.Texture * IrradianceAndEnvironmentMapOptRef : (OpenGL.Texture.Texture * OpenGL.Texture.Texture) option ref
     | StaticModelAsset of UserDefined : bool * StaticModel : OpenGL.PhysicallyBased.PhysicallyBasedModel
     | AnimatedModelAsset of AnimatedModel : OpenGL.PhysicallyBased.PhysicallyBasedModel
-
-/// A renderer tag interface.
-type Renderer = interface end
