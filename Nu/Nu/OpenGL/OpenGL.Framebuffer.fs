@@ -342,6 +342,65 @@ module Framebuffer =
         material.Destroy ()
         normalPlus.Destroy ()
 
+    /// Create a geometry view buffers.
+    let TryCreateGeometryViewBuffers () =
+
+        // create frame buffer object
+        let framebuffer = Gl.GenFramebuffer ()
+        Gl.BindFramebuffer (FramebufferTarget.Framebuffer, framebuffer)
+        Hl.Assert ()
+
+        // create position view buffer
+        let positionViewId = Gl.GenTexture ()
+        Gl.BindTexture (TextureTarget.Texture2d, positionViewId)
+        Gl.TexImage2D (TextureTarget.Texture2d, 0, InternalFormat.Rgba32f, Constants.Render.Resolution.X, Constants.Render.Resolution.Y, 0, PixelFormat.Rgba, PixelType.Float, nativeint 0)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureWrapS, int TextureWrapMode.ClampToEdge)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureWrapT, int TextureWrapMode.ClampToEdge)
+        Gl.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2d, positionViewId, 0)
+        Gl.BindTexture (TextureTarget.Texture2d, 0u)
+        Hl.Assert ()
+
+        // create normal plus view buffer
+        let normalPlusViewId = Gl.GenTexture ()
+        Gl.BindTexture (TextureTarget.Texture2d, normalPlusViewId)
+        Gl.TexImage2D (TextureTarget.Texture2d, 0, InternalFormat.Rgba32f, Constants.Render.Resolution.X, Constants.Render.Resolution.Y, 0, PixelFormat.Rgba, PixelType.Float, nativeint 0)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureMinFilter, int TextureMinFilter.Nearest)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureMagFilter, int TextureMagFilter.Nearest)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureWrapS, int TextureWrapMode.ClampToEdge)
+        Gl.TexParameter (TextureTarget.Texture2d, TextureParameterName.TextureWrapT, int TextureWrapMode.ClampToEdge)
+        Gl.FramebufferTexture2D (FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment1, TextureTarget.Texture2d, normalPlusViewId, 0)
+        Gl.BindTexture (TextureTarget.Texture2d, 0u)
+        Hl.Assert ()
+
+        // associate draw buffers
+        Gl.DrawBuffers
+            [|int FramebufferAttachment.ColorAttachment0
+              int FramebufferAttachment.ColorAttachment1|]
+        Hl.Assert ()
+
+        // create render buffer with depth and stencil
+        let renderbuffer = Gl.GenRenderbuffer ()
+        Gl.BindRenderbuffer (RenderbufferTarget.Renderbuffer, renderbuffer)
+        Gl.RenderbufferStorage (RenderbufferTarget.Renderbuffer, InternalFormat.Depth24Stencil8, Constants.Render.Resolution.X, Constants.Render.Resolution.Y)
+        Gl.FramebufferRenderbuffer (FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, renderbuffer)
+        Hl.Assert ()
+
+        // ensure framebuffer is complete
+        if Gl.CheckFramebufferStatus FramebufferTarget.Framebuffer = FramebufferStatus.FramebufferComplete then
+            let positionView = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = positionViewId }
+            let normalPlusView = Texture.EagerTexture { TextureMetadata = Texture.TextureMetadata.empty; TextureId = normalPlusViewId }
+            Right (positionView, normalPlusView, renderbuffer, framebuffer)
+        else Left "Could not create complete geometry view framebuffer."
+
+    /// Destroy geometry view buffers.
+    let DestroyGeometryViewBuffers (positionView : Texture.Texture, normalPlusView : Texture.Texture, renderbuffer, framebuffer) =
+        Gl.DeleteRenderbuffers [|renderbuffer|]
+        Gl.DeleteFramebuffers [|framebuffer|]
+        positionView.Destroy ()
+        normalPlusView.Destroy ()
+
     /// Create light mapping buffers.
     let TryCreateLightMappingBuffers () =
 

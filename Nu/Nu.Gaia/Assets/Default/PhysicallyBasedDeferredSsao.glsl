@@ -61,8 +61,8 @@ const vec3[SSAO_SAMPLES_MAX] SSAO_SAMPLING_DIRECTIONS = vec3[](
 
 uniform mat4 view;
 uniform mat4 projection;
-uniform sampler2D positionTexture;
-uniform sampler2D normalPlusTexture;
+uniform sampler2D positionViewTexture;
+uniform sampler2D normalPlusViewTexture;
 uniform ivec2 ssaoResolution;
 uniform float ssaoIntensity;
 uniform float ssaoBias;
@@ -93,11 +93,11 @@ float randomAngle()
 void main()
 {
     // ensure position was written
-    vec4 position = texture(positionTexture, texCoordsOut);
-    if (position.w == 1.0)
+    vec4 positionView = texture(positionViewTexture, texCoordsOut);
+    if (positionView.w == 1.0)
     {
         // retrieve remaining data from geometry buffers
-        vec3 normal = texture(normalPlusTexture, texCoordsOut).xyz;
+        vec3 normalView = texture(normalPlusViewTexture, texCoordsOut).xyz;
 
         // pre-compute resolution inverse
         vec2 ssaoResolutionInverse = vec2(1.0) / vec2(ssaoResolution);
@@ -116,8 +116,6 @@ void main()
 
         // compute screen space ambient occlusion
         float ssao = 0.0;
-        vec3 positionView = (view * position).xyz;
-        vec3 normalView = mat3(view) * normal;
         for (int i = 0; i < ssaoSampleCountCeil; ++i)
         {
             // compute sampling direction in view space
@@ -128,19 +126,16 @@ void main()
 
             // compute position and sampling position in screen space along with distance from origin
             vec2 positionScreen = gl_FragCoord.xy * ssaoResolutionInverse;
-            vec3 samplingPositionView = positionView + samplingDirectionView;
+            vec3 samplingPositionView = positionView.xyz + samplingDirectionView;
             vec4 samplingPositionClip = projection * vec4(samplingPositionView, 1.0);
             vec2 samplingPositionScreen = samplingPositionClip.xy / samplingPositionClip.w * 0.5 + 0.5;
             float distanceScreen = length(samplingPositionScreen - positionScreen);
 
             // ensure we're not sampling too far from origin and thus blowing the texture cache and that position is
             // written
-            vec4 samplePosition = texture(positionTexture, samplingPositionScreen);
-            if (distanceScreen < ssaoDistanceMax && samplePosition.w == 1.0)
+            vec4 samplePositionView = texture(positionViewTexture, samplingPositionScreen);
+            if (distanceScreen < ssaoDistanceMax && samplePositionView.w == 1.0)
             {
-                // compute sample position in view space
-                vec4 samplePositionView = view * samplePosition;
-
                 // perform range check and accumulate if occluded
                 float rangeCheck = smoothstep(0.0, 1.0, ssaoRadius / abs(positionView.z - samplePositionView.z));
                 ssao += samplePositionView.z >= samplingPositionView.z + ssaoBias ? rangeCheck : 0.0;

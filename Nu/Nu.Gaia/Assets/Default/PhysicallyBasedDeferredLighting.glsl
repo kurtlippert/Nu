@@ -57,6 +57,8 @@ uniform sampler2D positionTexture;
 uniform sampler2D albedoTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D normalPlusTexture;
+uniform sampler2D positionViewTexture;
+uniform sampler2D normalPlusViewTexture;
 uniform sampler2D brdfTexture;
 uniform sampler2D irradianceTexture;
 uniform sampler2D environmentFilterTexture;
@@ -188,19 +190,17 @@ vec3 computeFogAccumDirectional(vec4 position, int lightIndex)
     return result;
 }
 
-void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 normal, float slope, out vec3 specularSS, out float specularWeight)
+void ssr(vec4 positionView, vec3 albedo, float roughness, float metallic, vec3 normalView, float slope, out vec3 specularSS, out float specularWeight)
 {
     // compute view values
-    vec4 positionView = view * position;
     vec3 positionViewNormal = normalize(positionView.xyz);
-    vec3 normalView = mat3(view) * normal;
     vec3 reflectionView = reflect(positionViewNormal, normalView);
     vec4 startView = vec4(positionView.xyz, 1.0);
     vec4 stopView = vec4(positionView.xyz + reflectionView * ssrDistanceCutoff, 1.0);
     float eyeDistanceFromPlane = abs(dot(normalView, positionView.xyz));
 
     // compute the fragment at which to start marching
-    vec2 texSize = textureSize(positionTexture, 0).xy;
+    vec2 texSize = textureSize(positionViewTexture, 0).xy;
     vec4 startFrag4 = projection * startView;
     vec2 startFrag = startFrag4.xy / startFrag4.w;
     startFrag = startFrag * 0.5 + 0.5;
@@ -216,7 +216,6 @@ void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 norma
     // initialize current fragment
     vec2 currentFrag = startFrag;
     vec2 currentUV = currentFrag / texSize;
-    vec4 currentPosition = position;
     vec4 currentPositionView = positionView;
 
     // compute fragment step amount
@@ -235,8 +234,7 @@ void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 norma
         // advance frag values
         currentFrag += stepAmount;
         currentUV = currentFrag / texSize;
-        currentPosition = texture(positionTexture, currentUV);
-        currentPositionView = view * currentPosition;
+        currentPositionView = texture(positionViewTexture, currentUV);
         currentProgressB = length(currentFrag - startFrag) / lengthFrag;
         currentDepthView = -startView.z * -stopView.z / max(0.00001, mix(-stopView.z, -startView.z, currentProgressB)); // NOTE: uses perspective correct interpolation for depth, but causes precision issues as ssrDistanceCutoff increases.
 
@@ -247,7 +245,7 @@ void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 norma
             thickness = max(1.0 - eyeDistanceFromPlane + ssrRayThickness, thickness);
 
         // determine whether we hit geometry within acceptable thickness
-        if (currentPosition.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
+        if (currentPositionView.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
         {
             // perform refinements within walk
             currentProgressB = currentProgressA + (currentProgressB - currentProgressA) * 0.5;
@@ -256,8 +254,7 @@ void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 norma
                 // advance frag values
                 currentFrag = mix(startFrag, stopFrag, currentProgressB);
                 currentUV = currentFrag / texSize;
-                currentPosition = texture(positionTexture, currentUV);
-                currentPositionView = view * currentPosition;
+                currentPositionView = texture(positionViewTexture, currentUV);
                 currentDepthView = -startView.z * -stopView.z / max(0.00001, mix(-stopView.z, -startView.z, currentProgressB)); // NOTE: uses perspective correct interpolation for depth, but causes precision issues as ssrDistanceCutoff increases.
 
                 // compute depth delta and thickness based on view state
@@ -267,12 +264,12 @@ void ssr(vec4 position, vec3 albedo, float roughness, float metallic, vec3 norma
                     thickness = max(1.0 - eyeDistanceFromPlane + ssrRayThickness, thickness);
 
                 // determine whether we hit geometry within acceptable thickness
-                if (currentPosition.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
+                if (currentPositionView.w == 1.0 && depthDelta >= 0.0 && depthDelta <= thickness)
                 {
                     // compute screen-space specular color and weight
                     vec3 f0 = mix(vec3(0.04), albedo, metallic);
                     vec3 v = normalize(-positionView.xyz);
-                    vec3 h = normalize(v + normal);
+                    vec3 h = normalize(v + normalView); // NOTE: not sure if this should use normal in view space or world space...
                     vec3 f = fresnelSchlick(max(dot(h, v), 0.0), f0);
                     vec3 specularIntensity = f * (1.0 - roughness);
                     specularSS = vec3(texture(albedoTexture, currentUV).rgb * ssrLightColor * ssrLightBrightness * specularIntensity);
@@ -429,15 +426,16 @@ void main()
         vec3 forward = vec3(view[0][2], view[1][2], view[2][2]);
         float towardEye = dot(forward, normal);
         float slope = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-        vec4 positionView = view * position;
+        vec4 positionView = texture(positionViewTexture, texCoordsOut);
         if (ssrEnabled == 1 && towardEye <= ssrTowardEyeCutoff && -positionView.z <= ssrDepthCutoff && roughness <= ssrRoughnessCutoff && slope <= ssrSlopeCutoff)
         {
-            vec2 texSize = textureSize(positionTexture, 0).xy;
+            vec2 texSize = textureSize(positionViewTexture, 0).xy;
             float texelHeight = 1.0 / texSize.y;
             vec2 texCoordsBelow = texCoordsOut + vec2(0.0, -texelHeight); // using tex coord below current pixel reduces 'cracks' on floor reflections
             texCoordsBelow.y = max(0.0, texCoordsBelow.y);
-            vec4 positionBelow = texture(positionTexture, texCoordsBelow);
-            ssr(positionBelow, albedo, roughness, metallic, normal, slope, specularSS, specularWeight);
+            vec4 positionViewBelow = texture(positionViewTexture, texCoordsBelow);
+            vec3 normalView = texture(normalPlusViewTexture, texCoordsOut).xyz;
+            ssr(positionViewBelow, albedo, roughness, metallic, normalView, slope, specularSS, specularWeight);
         }
 
         // compute specular term
