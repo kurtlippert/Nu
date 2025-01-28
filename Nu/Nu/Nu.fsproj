@@ -119,9 +119,9 @@
 		<Compile Include="World\WorldFacets.fs" />
 		<Compile Include="World\WorldDispatchers.fs" />
 		<Compile Include="World\WorldEntityHierarchy.fs" />
-		<Compile Include="World\WorldAnonymous.fs" />
 		<Compile Include="World\WorldImNui.fs" />
 		<Compile Include="World\WorldContent.fs" />
+		<Compile Include="World\WorldStateless.fs" />
 		<Compile Include="World\WorldModule2.fs" />
 		<Compile Include="World\World.fs" />
 		<None Include="Scripts\GenerateInputBindings.fsx" />
