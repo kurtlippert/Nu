@@ -330,7 +330,7 @@ type RenderLightProbe3d =
       Origin : Vector3
       AmbientColor : Color
       AmbientBrightness : single
-      Bounds : Box3
+      ProbeBounds : Box3
       RenderPass : RenderPass }
 
 type RenderLightMap3d =
@@ -2869,7 +2869,7 @@ type [<ReferenceEquality>] GlRenderer3d =
                 if renderTasks.LightProbes.ContainsKey rlp.LightProbeId then
                     Log.infoOnce ("Multiple light probe messages coming in with the same id of '" + string rlp.LightProbeId + "'.")
                     renderTasks.LightProbes.Remove rlp.LightProbeId |> ignore<bool>
-                renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.Bounds))
+                renderTasks.LightProbes.Add (rlp.LightProbeId, struct (rlp.Enabled, rlp.Origin, rlp.AmbientColor, rlp.AmbientBrightness, rlp.ProbeBounds))
             | RenderLightMap3d rlm ->
                 let renderTasks = GlRenderer3d.getRenderTasks rlm.RenderPass renderer
                 renderTasks.LightMapRenders.Add rlm.LightProbeId |> ignore<bool>

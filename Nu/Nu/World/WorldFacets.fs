@@ -2347,8 +2347,8 @@ type LightProbe3dFacet () =
         let position = entity.GetPosition world
         let ambientColor = entity.GetAmbientColor world
         let ambientBrightness = entity.GetAmbientBrightness world
-        let bounds = entity.GetProbeBounds world
-        World.enqueueRenderMessage3d (RenderLightProbe3d { LightProbeId = id; Enabled = enabled; Origin = position; AmbientColor = ambientColor; AmbientBrightness = ambientBrightness; Bounds = bounds; RenderPass = renderPass }) world
+        let probeBounds = entity.GetProbeBounds world
+        World.enqueueRenderMessage3d (RenderLightProbe3d { LightProbeId = id; Enabled = enabled; Origin = position; AmbientColor = ambientColor; AmbientBrightness = ambientBrightness; ProbeBounds = probeBounds; RenderPass = renderPass }) world
 
     override this.RayCast (ray, entity, world) =
         let intersectionOpt = ray.Intersects (entity.GetBounds world)
