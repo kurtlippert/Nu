@@ -327,7 +327,6 @@ module WorldAnonymous =
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
             let down = textBox.Enabled && inside && World.isMouseButtonDown MouseLeft world
             let color = if textBox.Enabled then textBox.Color else textBox.ColorDisabled
-            let shift = if down then textBox.TextShift else 0.0f
             let mutable text = textBox.Text
             let focused = textBox.Enabled && (textBox.Focused || inside && down)
             let mutable cursor = textBox.Cursor
@@ -343,23 +342,18 @@ module WorldAnonymous =
             match textBox.BackdropImageOpt with
             | Some backdropImage -> World.renderGuiSpriteSliced textBox.Absolute perimeter.Box3 textBox.SliceMargin backdropImage v3Zero textBox.Elevation color world
             | None -> ()
-            World.renderGuiText textBox.Absolute perimeter.Box3 v3Zero textBox.Elevation shift (ValueSome perimeter) (Justified (JustifyCenter, JustifyMiddle)) None v3Zero textBox.TextColor textBox.Font textBox.FontSizing textBox.FontStyling textBox.Text world
+            World.renderGuiText textBox.Absolute perimeter.Box3 v3Zero textBox.Elevation textBox.TextShift (ValueSome perimeter) (Justified (JustifyCenter, JustifyMiddle)) (Some cursor) v3Zero textBox.TextColor textBox.Font textBox.FontSizing textBox.FontStyling text world
             (text, focused, cursor, world)
 
         /// Declare an anonymous label.
         static member anonLabel (label : AnonLabel) world =
-            let mousePosition = World.getMousePostion2dWorld label.Absolute world
             let perimeter = box2 (label.Position - label.Size * 0.5f) label.Size
-            let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
-            let down = label.Enabled && inside && World.isMouseButtonDown MouseLeft world
-            let clicked = label.Enabled && World.isMouseButtonClicked MouseLeft world
             let color = if label.Enabled then label.Color else label.ColorDisabled
-            let shift = if down then label.TextShift else 0.0f
             match label.BackdropImageOpt with
             | Some backdropImage -> World.renderGuiSpriteSliced label.Absolute perimeter.Box3 label.SliceMargin backdropImage v3Zero label.Elevation color world
             | None -> ()
-            World.renderGuiText label.Absolute perimeter.Box3 v3Zero label.Elevation shift (ValueSome perimeter) label.Justification None v3Zero label.TextColor label.Font label.FontSizing label.FontStyling label.Text world
-            (inside && clicked, world)
+            World.renderGuiText label.Absolute perimeter.Box3 v3Zero label.Elevation label.TextShift (ValueSome perimeter) label.Justification None v3Zero label.TextColor label.Font label.FontSizing label.FontStyling label.Text world
+            world
 
         /// Declare an anonymous button.
         static member anonButton (button : AnonButton) world =
@@ -370,7 +364,6 @@ module WorldAnonymous =
             let clicked = button.Enabled && World.isMouseButtonClicked MouseLeft world
             let image = if down then button.DownImage else button.UpImage
             let color = if button.Enabled then button.Color else button.ColorDisabled
-            let shift = if down then button.TextShift else 0.0f
             World.renderGuiSpriteSliced button.Absolute perimeter.Box3 button.SliceMargin image v3Zero button.Elevation color world
-            World.renderGuiText button.Absolute perimeter.Box3 v3Zero button.Elevation shift (ValueSome perimeter) button.Justification None v3Zero button.TextColor button.Font button.FontSizing button.FontStyling button.Text world
+            World.renderGuiText button.Absolute perimeter.Box3 v3Zero button.Elevation button.TextShift (ValueSome perimeter) button.Justification None v3Zero button.TextColor button.Font button.FontSizing button.FontStyling button.Text world
             (inside && clicked, world)
