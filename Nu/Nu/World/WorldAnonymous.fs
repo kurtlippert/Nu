@@ -7,8 +7,8 @@ open System.Numerics
 open Prime
 open Nu
 
-/// An anonymous static sprite definition.
-type AnonStaticSprite =
+/// A stateless static sprite definition.
+type StatelessStaticSprite =
     { Absolute : bool
       Position : Vector2
       Rotation : single
@@ -32,8 +32,8 @@ type AnonStaticSprite =
           Flip = FlipNone
           StaticImage = Assets.Default.Image }
 
-/// An anonymous 3D light probe definition.
-type AnonLightProbe3d =
+/// A stateless 3D light probe definition.
+type StatelessLightProbe3d =
     { LightProbeId : uint64
       Enabled : bool
       Origin : Vector3
@@ -49,8 +49,8 @@ type AnonLightProbe3d =
           AmbientBrightness = Constants.Render.BrightnessDefault
           ProbeBounds = box3 (v3Dup Constants.Render.LightProbeSizeDefault * -0.5f) (v3Dup Constants.Render.LightProbeSizeDefault) }
 
-/// An anonymous 3D light definition.
-type AnonLight3d =
+/// A stateless 3D light definition.
+type StatelessLight3d =
     { LightId : uint64
       Origin : Vector3
       Rotation : Quaternion
@@ -74,8 +74,8 @@ type AnonLight3d =
           LightType = PointLight
           DesireShadows = false }
 
-/// An anonymous static model definition.
-type AnonStaticModel =
+/// A stateless static model definition.
+type StatelessStaticModel =
     { Position : Vector3
       Rotation : Quaternion
       Scale : Vector3
@@ -97,8 +97,8 @@ type AnonStaticModel =
           RenderStyle = Deferred
           StaticModel = Assets.Default.StaticModel }
 
-/// An anonymous text definition.
-type AnonText =
+/// A stateless text definition.
+type StatelessText =
     { Absolute : bool
       Enabled : bool
       Position : Vector2
@@ -132,8 +132,8 @@ type AnonText =
           SliceMargin = Constants.Gui.SliceMarginDefault
           BackdropImageOpt = Some Assets.Default.Label }
 
-/// An anonymous text box definition.
-type AnonTextBox =
+/// A stateless text box definition.
+type StatelessTextBox =
     { Absolute : bool
       Enabled : bool
       Position : Vector2
@@ -173,8 +173,8 @@ type AnonTextBox =
           SliceMargin = Constants.Gui.SliceMarginDefault
           BackdropImageOpt = Some Assets.Default.Label }
 
-/// An anonymous label definition.
-type AnonLabel =
+/// A stateless label definition.
+type StatelessLabel =
     { Absolute : bool
       Enabled : bool
       Position : Vector2
@@ -210,8 +210,8 @@ type AnonLabel =
           SliceMargin = Constants.Gui.SliceMarginDefault
           BackdropImageOpt = Some Assets.Default.Label }
 
-/// An anonymous button definition.
-type AnonButton =
+/// A stateless button definition.
+type StatelessButton =
     { Absolute : bool
       Enabled : bool
       Position : Vector2
@@ -250,20 +250,20 @@ type AnonButton =
           DownImage = Assets.Default.ButtonDown }
 
 [<AutoOpen>]
-module WorldAnonymous =
+module WorldStateless =
 
     type World with
 
-        /// Declare an anonymous static sprite.
-        static member anonStaticSprite (sprite : AnonStaticSprite) world =
+        /// Declare an stateless static sprite.
+        static member statelessStaticSprite (sprite : StatelessStaticSprite) world =
             let mutable transform = Transform.makeIntuitive sprite.Absolute sprite.Position.V3 v3One v3Zero sprite.Size.V3 (v3 0.0f 0.0f sprite.Rotation) sprite.Elevation
             let mutable insetOpt = ValueNone
             let mutable clipOpt = ValueNone
             World.renderLayeredSpriteFast (sprite.Elevation, transform.Horizon, sprite.StaticImage, &transform, &insetOpt, &clipOpt, sprite.StaticImage, &sprite.Color, sprite.Blend, &sprite.Emission, sprite.Flip, world)
             world
 
-        /// Declare an anonymous 3D light probe.
-        static member anonLightProbe3d (lightProbe : AnonLightProbe3d) renderPasses world =
+        /// Declare an stateless 3D light probe.
+        static member statelessLightProbe3d (lightProbe : StatelessLightProbe3d) renderPasses world =
             for (renderPass : RenderPass) in renderPasses do
                 World.enqueueRenderMessage3d
                     (RenderLightProbe3d
@@ -276,8 +276,8 @@ module WorldAnonymous =
                           RenderPass = renderPass })
                     world
 
-        /// Declare an anonymous 3D light.
-        static member anonLight3d (light : AnonLight3d) renderPasses world =
+        /// Declare an stateless 3D light.
+        static member statelessLight3d (light : StatelessLight3d) renderPasses world =
             for (renderPass : RenderPass) in renderPasses do
                 World.enqueueRenderMessage3d
                     (RenderLight3d
@@ -295,8 +295,8 @@ module WorldAnonymous =
                           RenderPass = renderPass })
                     world
 
-        /// Declare an anonymous static model.
-        static member anonStaticModel (model : AnonStaticModel) renderPasses world =
+        /// Declare an stateless static model.
+        static member statelessStaticModel (model : StatelessStaticModel) renderPasses world =
             for (renderPass : RenderPass) in renderPasses do
                 if not renderPass.IsShadowPass || model.CastShadow then
                     let affineMatrix = Matrix4x4.CreateAffine (model.Position, model.Rotation, model.Scale)
@@ -310,8 +310,8 @@ module WorldAnonymous =
                     World.renderStaticModelFast (&affineMatrix, model.CastShadow, model.Presence, insetOpt, &properties, staticModel, renderType, renderPass, world)
             world
 
-        /// Declare an anonymous text control.
-        static member anonText (text : AnonText) world =
+        /// Declare an stateless text control.
+        static member statelessText (text : StatelessText) world =
             let perimeter = box2 (text.Position - text.Size * 0.5f) text.Size
             let color = if text.Enabled then text.Color else text.ColorDisabled
             match text.BackdropImageOpt with
@@ -320,8 +320,8 @@ module WorldAnonymous =
             World.renderGuiText text.Absolute perimeter.Box3 v3Zero text.Elevation 0.0f (ValueSome perimeter) text.Justification None v3Zero text.TextColor text.Font text.FontSizing text.FontStyling text.Text world
             world
 
-        /// Declare an anonymous text box control.
-        static member anonTextBox (textBox : AnonTextBox) textInputs (world : World) =
+        /// Declare an stateless text box control.
+        static member statelessTextBox (textBox : StatelessTextBox) textInputs (world : World) =
             let mousePosition = World.getMousePostion2dWorld textBox.Absolute world
             let perimeter = box2 (textBox.Position - textBox.Size * 0.5f) textBox.Size
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
@@ -345,8 +345,8 @@ module WorldAnonymous =
             World.renderGuiText textBox.Absolute perimeter.Box3 v3Zero textBox.Elevation textBox.TextShift (ValueSome perimeter) (Justified (JustifyCenter, JustifyMiddle)) (Some cursor) v3Zero textBox.TextColor textBox.Font textBox.FontSizing textBox.FontStyling text world
             (text, focused, cursor, world)
 
-        /// Declare an anonymous label.
-        static member anonLabel (label : AnonLabel) world =
+        /// Declare an stateless label.
+        static member statelessLabel (label : StatelessLabel) world =
             let perimeter = box2 (label.Position - label.Size * 0.5f) label.Size
             let color = if label.Enabled then label.Color else label.ColorDisabled
             match label.BackdropImageOpt with
@@ -355,8 +355,8 @@ module WorldAnonymous =
             World.renderGuiText label.Absolute perimeter.Box3 v3Zero label.Elevation label.TextShift (ValueSome perimeter) label.Justification None v3Zero label.TextColor label.Font label.FontSizing label.FontStyling label.Text world
             world
 
-        /// Declare an anonymous button.
-        static member anonButton (button : AnonButton) world =
+        /// Declare an stateless button.
+        static member statelessButton (button : StatelessButton) world =
             let mousePosition = World.getMousePostion2dWorld button.Absolute world
             let perimeter = box2 (button.Position - button.Size * 0.5f) button.Size
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
