@@ -7,6 +7,15 @@ open System.Numerics
 open Prime
 open Nu
 
+type StatelessInput =
+    { MouseWheelData : MouseWheelData FQueue
+      MouseLeftChangeData : MouseButtonData FQueue
+      MouseMiddleChangeData : MouseButtonData FQueue
+      MouseRightChangeData : MouseButtonData FQueue
+      MouseX1ChangeData : MouseButtonData FQueue
+      MouseX2ChangeData : MouseButtonData FQueue
+      TextInputData : TextInputData FQueue }
+
 /// A stateless static sprite definition.
 type StatelessStaticSprite =
     { Absolute : bool
@@ -260,6 +269,25 @@ module WorldStateless =
 
     type World with
 
+        /// Declare stateless input.
+        static member statelessInput world =
+            let (mouseWheelData, world) = World.doSubscription "MouseWheel" Game.MouseWheelEvent world
+            let (mouseLeftChangeData, world) = World.doSubscription "MouseLeftChanges" Game.MouseLeftChangeEvent world
+            let (mouseMiddleChangeData, world) = World.doSubscription "MouseLeftChanges" Game.MouseMiddleChangeEvent world
+            let (mouseRightChangeData, world) = World.doSubscription "MouseRightChanges" Game.MouseRightChangeEvent world
+            let (mouseX1ChangeData, world) = World.doSubscription "MouseX1Changes" Game.MouseX1ChangeEvent world
+            let (mouseX2ChangeData, world) = World.doSubscription "MouseX2Changes" Game.MouseX2ChangeEvent world
+            let (textInputData, world) = World.doSubscription "TextInputs" Game.TextInputEvent world
+            let input =
+                { MouseWheelData = mouseWheelData
+                  MouseLeftChangeData = mouseLeftChangeData
+                  MouseMiddleChangeData = mouseMiddleChangeData
+                  MouseRightChangeData = mouseRightChangeData
+                  MouseX1ChangeData = mouseX1ChangeData
+                  MouseX2ChangeData = mouseX2ChangeData
+                  TextInputData = textInputData }
+            (input, world)
+
         /// Declare an stateless static sprite.
         static member statelessStaticSprite (sprite : StatelessStaticSprite) world =
             let mutable transform = Transform.makeIntuitive sprite.Absolute sprite.Position.V3 v3One v3Zero sprite.Size.V3 (v3 0.0f 0.0f sprite.Rotation) sprite.Elevation
@@ -327,7 +355,7 @@ module WorldStateless =
             world
 
         /// Declare an stateless text box control.
-        static member statelessTextBox (textBox : StatelessTextBox) textInputs (world : World) =
+        static member statelessTextBox (textBox : StatelessTextBox) input (world : World) =
             let mousePosition = World.getMousePostion2dWorld textBox.Absolute world
             let perimeter = box2 (textBox.Position - textBox.Size * 0.5f) textBox.Size
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
@@ -337,12 +365,12 @@ module WorldStateless =
             let focused = textBox.Enabled && (textBox.Focused || inside && down)
             let mutable cursor = textBox.Cursor
             if focused then
-                for (textInput : char) in textInputs do
+                for textInputData in input.TextInputData do
                     if world.Advancing && text.Length < textBox.TextCapacity then
                         text <-
                             if cursor < 0 || cursor >= text.Length
-                            then text + string textInput
-                            else String.take cursor text + string textInput + String.skip cursor text
+                            then text + string textInputData.TextInput
+                            else String.take cursor text + string textInputData.TextInput + String.skip cursor text
                         cursor <- inc cursor
                 // TODO: P0: add cursor nav.
             match textBox.BackdropImageOpt with
@@ -362,12 +390,12 @@ module WorldStateless =
             world
 
         /// Declare an stateless button.
-        static member statelessButton (button : StatelessButton) world =
+        static member statelessButton (button : StatelessButton) input world =
             let mousePosition = World.getMousePostion2dWorld button.Absolute world
             let perimeter = box2 (button.Position - button.Size * 0.5f) button.Size
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
             let down = button.Enabled && inside && World.isMouseButtonDown MouseLeft world
-            let clicked = button.Enabled && World.isMouseButtonClicked MouseLeft world
+            let clicked = button.Enabled && input.MouseLeftChangeData |> Seq.exists (_.Down >> not) 
             let image = if down then button.DownImage else button.UpImage
             let color = if button.Enabled then button.Color else button.ColorDisabled
             World.renderGuiSpriteSliced button.Absolute perimeter.Box3 button.SliceMargin image v3Zero button.Elevation color world
