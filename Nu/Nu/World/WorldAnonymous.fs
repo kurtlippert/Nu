@@ -7,12 +7,12 @@ open System.Numerics
 open Prime
 open Nu
 
-/// An anonymouse static sprite definition.
+/// An anonymous static sprite definition.
 type StaticSprite =
     { Absolute : bool
       Position : Vector2
-      Size : Vector2
       Rotation : single
+      Size : Vector2
       Elevation : single
       Enabled : bool
       Color : Color
@@ -21,11 +21,11 @@ type StaticSprite =
       Flip : Flip
       StaticImage : Image AssetTag }
 
-    static member value =
+    static member args =
         { Absolute = false
           Position = v2Zero
-          Size = Constants.Engine.EntityGuiSizeDefault.V2
           Rotation = 0.0f
+          Size = Constants.Engine.EntityGuiSizeDefault.V2
           Elevation = 0.0f
           Enabled = true
           Color = colorOne
@@ -34,7 +34,129 @@ type StaticSprite =
           Flip = FlipNone
           StaticImage = Assets.Default.Image }
 
-/// An anonymouse button definition.
+/// An anonymous 3D light definition.
+type Light3d =
+    { LightId : uint64
+      Position : Vector3
+      Rotation : Quaternion
+      Color : Color
+      Brightness : single
+      AttenuationLinear : single
+      AttenuationQuadratic : single
+      LightCutoff : single
+      LightType : LightType
+      DesireShadows : bool }
+
+    static member args =
+        { LightId = 0UL
+          Position = v3Zero
+          Rotation = quatIdentity
+          Color = colorOne
+          Brightness = Constants.Render.BrightnessDefault
+          AttenuationLinear = Constants.Render.AttenuationLinearDefault
+          AttenuationQuadratic = Constants.Render.AttenuationQuadraticDefault
+          LightCutoff = Constants.Render.LightCutoffDefault
+          LightType = PointLight
+          DesireShadows = false }
+
+/// An anonymous static model definition.
+type StaticModelAnon =
+    { Position : Vector3
+      Rotation : Quaternion
+      Scale : Vector3
+      CastShadow : bool
+      Presence : Presence
+      InsetOpt : Box2 option
+      MaterialProperties : MaterialProperties
+      RenderStyle : RenderStyle
+      StaticModel : StaticModel AssetTag }
+
+    static member args =
+        { Position = v3Zero
+          Scale = v3One
+          Rotation = quatIdentity
+          CastShadow = true
+          Presence = Exterior
+          InsetOpt = None
+          MaterialProperties = MaterialProperties.defaultProperties
+          RenderStyle = Deferred
+          StaticModel = Assets.Default.StaticModel }
+
+/// An anonymous text definition.
+type Text =
+    { Absolute : bool
+      Position : Vector2
+      Size : Vector2
+      Elevation : single
+      Enabled : bool
+      Color : Color
+      ColorDisabled : Color
+      Text : string
+      TextColor : Color
+      TextShift : single
+      Justification : Justification
+      Font : Font AssetTag
+      FontSizing : int option
+      FontStyling : FontStyle Set
+      SliceMargin : Vector2
+      BackdropImageOpt : Image AssetTag option }
+
+    static member args =
+        { Absolute = true
+          Position = v2Zero
+          Size = Constants.Engine.EntityGuiSizeDefault.V2
+          Elevation = 0.0f
+          Enabled = true
+          Color = colorOne
+          ColorDisabled = Constants.Gui.ColorDisabledDefault
+          Text = ""
+          TextColor = colorOne
+          TextShift = Constants.Gui.TextShiftDefault
+          Justification = Justified (JustifyCenter, JustifyMiddle)
+          Font = Assets.Default.Font
+          FontSizing = None
+          FontStyling = Set.empty
+          SliceMargin = Constants.Gui.SliceMarginDefault
+          BackdropImageOpt = Some Assets.Default.Label }
+
+/// An anonymous label definition.
+type Label =
+    { Absolute : bool
+      Position : Vector2
+      Size : Vector2
+      Elevation : single
+      Enabled : bool
+      Color : Color
+      ColorDisabled : Color
+      Text : string
+      TextColor : Color
+      TextShift : single
+      Justification : Justification
+      Font : Font AssetTag
+      FontSizing : int option
+      FontStyling : FontStyle Set
+      SliceMargin : Vector2
+      BackdropImageOpt : Image AssetTag option }
+
+    static member args =
+        { Absolute = true
+          Position = v2Zero
+          Size = Constants.Engine.EntityGuiSizeDefault.V2
+          Elevation = 0.0f
+          Enabled = true
+          Color = colorOne
+          ColorDisabled = Constants.Gui.ColorDisabledDefault
+          Text = ""
+          TextColor = colorOne
+          TextShift = Constants.Gui.TextShiftDefault
+          Justification = Justified (JustifyCenter, JustifyMiddle)
+          Font = Assets.Default.Font
+          FontSizing = None
+          FontStyling = Set.empty
+          SliceMargin = Constants.Gui.SliceMarginDefault
+          BackdropImageOpt = Some Assets.Default.Label }
+
+/// An anonymous button definition.
 type Button =
     { Absolute : bool
       Position : Vector2
@@ -54,7 +176,7 @@ type Button =
       UpImage : Image AssetTag
       DownImage : Image AssetTag }
 
-    static member value =
+    static member args =
         { Absolute = true
           Position = v2Zero
           Size = Constants.Engine.EntityGuiSizeDefault.V2
@@ -74,7 +196,7 @@ type Button =
           DownImage = Assets.Default.ButtonDown }
 
 [<AutoOpen>]
-module WorldAnon =
+module WorldAnonymous =
 
     type World with
 
@@ -85,6 +207,70 @@ module WorldAnon =
             let mutable clipOpt = ValueNone
             World.renderLayeredSpriteFast (sprite.Elevation, transform.Horizon, sprite.StaticImage, &transform, &insetOpt, &clipOpt, sprite.StaticImage, &sprite.Color, sprite.Blend, &sprite.Emission, sprite.Flip, world)
             world
+
+        /// Declare an anonymous 3D light.
+        static member anonLight3d (light : Light3d) renderPasses world =
+            for (renderPass : RenderPass) in renderPasses do
+                World.enqueueRenderMessage3d
+                    (RenderLight3d
+                        { LightId = light.LightId
+                          Origin = light.Position
+                          Rotation = light.Rotation
+                          Direction = light.Rotation.Down
+                          Color = light.Color
+                          Brightness = light.Brightness
+                          AttenuationLinear = light.AttenuationLinear
+                          AttenuationQuadratic = light.AttenuationQuadratic
+                          LightCutoff = light.LightCutoff
+                          LightType = light.LightType
+                          DesireShadows = light.DesireShadows
+                          RenderPass = renderPass })
+                    world
+
+        /// Declare an anonymous static sprite.
+        static member anonStaticModel (model : StaticModelAnon) renderPasses world =
+            for (renderPass : RenderPass) in renderPasses do
+                if not renderPass.IsShadowPass || model.CastShadow then
+                    let affineMatrix = Matrix4x4.CreateAffine (model.Position, model.Rotation, model.Scale)
+                    let insetOpt = ValueOption.ofOption model.InsetOpt
+                    let properties = model.MaterialProperties
+                    let staticModel = model.StaticModel
+                    let renderType =
+                        match model.RenderStyle with
+                        | Deferred -> DeferredRenderType
+                        | Forward (subsort, sort) -> ForwardRenderType (subsort, sort)
+                    World.renderStaticModelFast (&affineMatrix, model.CastShadow, model.Presence, insetOpt, &properties, staticModel, renderType, renderPass, world)
+            world
+
+        /// Declare an anonymous text control.
+        static member anonText (text : Text) world =
+            let mousePosition = World.getMousePostion2dWorld text.Absolute world
+            let perimeter = box2 (text.Position - text.Size * 0.5f) text.Size
+            let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
+            let down = text.Enabled && inside && World.isMouseButtonDown MouseLeft world
+            let clicked = text.Enabled && World.isMouseButtonClicked MouseLeft world
+            let color = if text.Enabled then text.Color else text.ColorDisabled
+            let shift = if down then text.TextShift else 0.0f
+            match text.BackdropImageOpt with
+            | Some backdropImage -> World.renderGuiSpriteSliced text.Absolute perimeter.Box3 text.SliceMargin backdropImage v3Zero text.Elevation color world
+            | None -> ()
+            World.renderGuiText text.Absolute perimeter.Box3 v3Zero text.Elevation shift (ValueSome perimeter) text.Justification None v3Zero text.TextColor text.Font text.FontSizing text.FontStyling text.Text world
+            (inside && clicked, world)
+
+        /// Declare an anonymous label.
+        static member anonLabel (label : Label) world =
+            let mousePosition = World.getMousePostion2dWorld label.Absolute world
+            let perimeter = box2 (label.Position - label.Size * 0.5f) label.Size
+            let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
+            let down = label.Enabled && inside && World.isMouseButtonDown MouseLeft world
+            let clicked = label.Enabled && World.isMouseButtonClicked MouseLeft world
+            let color = if label.Enabled then label.Color else label.ColorDisabled
+            let shift = if down then label.TextShift else 0.0f
+            match label.BackdropImageOpt with
+            | Some backdropImage -> World.renderGuiSpriteSliced label.Absolute perimeter.Box3 label.SliceMargin backdropImage v3Zero label.Elevation color world
+            | None -> ()
+            World.renderGuiText label.Absolute perimeter.Box3 v3Zero label.Elevation shift (ValueSome perimeter) label.Justification None v3Zero label.TextColor label.Font label.FontSizing label.FontStyling label.Text world
+            (inside && clicked, world)
 
         /// Declare an anonymous button.
         static member anonButton (button : Button) world =
