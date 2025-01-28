@@ -32,6 +32,12 @@ type StatelessStaticSprite =
           Flip = FlipNone
           StaticImage = Assets.Default.Image }
 
+/// A stateless animated sprite definition.
+/// TODO: P0.
+
+/// A stateless tile map definition.
+/// TODO: P0.
+
 /// A stateless 3D light probe definition.
 type StatelessLightProbe3d =
     { LightProbeId : uint64
