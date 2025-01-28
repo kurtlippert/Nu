@@ -7,6 +7,15 @@ open System.Numerics
 open Prime
 open Nu
 
+(*
+Example usage code:
+        let (input, world) = World.statelessInput world
+        let (text, focused, cursor, world) = World.statelessTextBox { StatelessTextBox.args "Abc" true 1 with Position = v2 0.0f 64.0f } input world
+        let (clicked, world) = World.statelessButton { StatelessButton.args with Text = "Stateless" } input world
+        let world = if clicked && world.Unaccompanied then World.exit world else world
+*)
+
+///
 type StatelessInput =
     { MouseWheelData : MouseWheelData FQueue
       MouseLeftChangeData : MouseButtonData FQueue
