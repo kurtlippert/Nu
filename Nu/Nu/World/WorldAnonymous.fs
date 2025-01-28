@@ -321,7 +321,7 @@ module WorldAnonymous =
             world
 
         /// Declare an anonymous text box control.
-        static member anonTextBox textInputs (textBox : AnonTextBox) (world : World) =
+        static member anonTextBox (textBox : AnonTextBox) textInputs (world : World) =
             let mousePosition = World.getMousePostion2dWorld textBox.Absolute world
             let perimeter = box2 (textBox.Position - textBox.Size * 0.5f) textBox.Size
             let inside = perimeter.Contains mousePosition <> ContainmentType.Disjoint
@@ -329,13 +329,11 @@ module WorldAnonymous =
             let color = if textBox.Enabled then textBox.Color else textBox.ColorDisabled
             let shift = if down then textBox.TextShift else 0.0f
             let mutable text = textBox.Text
-            let focused = textBox.Focused || inside && down
+            let focused = textBox.Enabled && (textBox.Focused || inside && down)
             let mutable cursor = textBox.Cursor
             if focused then
-                for (textInput : TextInputData) in textInputs do
-                    if  world.Advancing &&
-                        textBox.Enabled &&
-                        text.Length < textBox.TextCapacity then
+                for (textInput : char) in textInputs do
+                    if world.Advancing && text.Length < textBox.TextCapacity then
                         text <-
                             if cursor < 0 || cursor >= text.Length
                             then text + string textInput
