@@ -227,7 +227,7 @@ module WorldAnonymous =
                           RenderPass = renderPass })
                     world
 
-        /// Declare an anonymous static sprite.
+        /// Declare an anonymous static model.
         static member anonStaticModel (model : StaticModelAnon) renderPasses world =
             for (renderPass : RenderPass) in renderPasses do
                 if not renderPass.IsShadowPass || model.CastShadow then
